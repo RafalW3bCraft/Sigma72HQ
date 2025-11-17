@@ -1,12 +1,12 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import {
   User,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { UserProfile, InsertUserProfile } from '@shared/schema';
 
@@ -25,24 +25,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileListenerRef = useRef<null | (() => void)>(null);
+
+  const ensureUserProfileDocument = async (user: User) => {
+    const userDocRef = doc(db, 'users', user.uid);
+    const profileDoc = await getDoc(userDocRef);
+
+    if (!profileDoc.exists()) {
+      const fallbackProfile: UserProfile = {
+        uid: user.uid,
+        email: user.email ?? '',
+        companyName: user.displayName || 'Admin Company',
+        phoneNumber: user.phoneNumber || 'N/A',
+        role: 'user',
+        createdAt: Date.now(),
+      };
+
+      await setDoc(userDocRef, fallbackProfile);
+      setUserProfile(fallbackProfile);
+    }
+
+    return userDocRef;
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      profileListenerRef.current?.();
       setCurrentUser(user);
-      
+
       if (user) {
-        const profileDoc = await getDoc(doc(db, 'users', user.uid));
-        if (profileDoc.exists()) {
-          setUserProfile(profileDoc.data() as UserProfile);
+        setLoading(true);
+        try {
+          const userDocRef = await ensureUserProfileDocument(user);
+
+          profileListenerRef.current = onSnapshot(
+            userDocRef,
+            (snapshot) => {
+              if (snapshot.exists()) {
+                setUserProfile(snapshot.data() as UserProfile);
+              }
+              setLoading(false);
+            },
+            (error) => {
+              console.error('Failed to subscribe to user profile', error);
+              setLoading(false);
+            },
+          );
+        } catch (error) {
+          console.error('Failed to load user profile', error);
+          setUserProfile(null);
+          setLoading(false);
         }
       } else {
         setUserProfile(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      profileListenerRef.current?.();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, profile: InsertUserProfile) => {
@@ -68,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await firebaseSignOut(auth);
+    profileListenerRef.current?.();
     setUserProfile(null);
   };
 

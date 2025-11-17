@@ -104,6 +104,7 @@ export const supportMessageSchema = z.object({
   message: z.string(),
   status: z.enum(["open", "in-progress", "resolved"]),
   createdAt: z.number(),
+  updatedAt: z.number().optional(),
 });
 
 export const insertSupportMessageSchema = supportMessageSchema.omit({ id: true, createdAt: true });

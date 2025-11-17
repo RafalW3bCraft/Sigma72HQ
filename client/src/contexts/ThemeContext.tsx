@@ -16,18 +16,30 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem('theme');
-    if (stored === 'light' || stored === 'dark') {
-      setThemeState(stored);
+    if (typeof window === 'undefined') return;
+
+    try {
+      const stored = window.localStorage.getItem('theme');
+      if (stored === 'light' || stored === 'dark') {
+        setThemeState(stored);
+      }
+    } catch (error) {
+      console.warn('[ThemeContext] Unable to read theme from localStorage.', error);
     }
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || typeof document === 'undefined') return;
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
-    localStorage.setItem('theme', theme);
+
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('theme', theme);
+    } catch (error) {
+      console.warn('[ThemeContext] Unable to persist theme to localStorage.', error);
+    }
   }, [theme, mounted]);
 
   const setTheme = (newTheme: Theme) => {

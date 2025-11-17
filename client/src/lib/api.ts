@@ -1,23 +1,26 @@
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  query, 
-  where, 
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  getDoc,
+  query,
+  where,
   orderBy,
-  Timestamp,
+  deleteField,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { 
-  InsertProject, 
-  Project, 
-  InsertSupportMessage, 
+import {
+  InsertProject,
+  Project,
+  InsertSupportMessage,
   SupportMessage,
   ContactForm,
+  ContactSubmission,
+  UserProfile,
 } from '@shared/schema';
 
 export const projectsApi = {
@@ -87,6 +90,37 @@ export const projectsApi = {
     const docRef = doc(db, 'projects', projectId);
     await deleteDoc(docRef);
   },
+
+  async getAll(): Promise<Project[]> {
+    const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...(docSnap.data() as Omit<Project, 'id'>),
+    }));
+  },
+
+  subscribeAll(
+    callback: (projects: Project[]) => void,
+    onError?: (error: Error) => void,
+  ) {
+    const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));
+
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const next = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...(docSnap.data() as Omit<Project, 'id'>),
+        }));
+        callback(next);
+      },
+      (error) => {
+        console.error('[projectsApi.subscribeAll]', error);
+        onError?.(error);
+      },
+    );
+  },
 };
 
 export const supportApi = {
@@ -97,6 +131,7 @@ export const supportApi = {
       userId,
       status: 'open' as const,
       createdAt: now,
+      updatedAt: now,
     };
 
     const docRef = await addDoc(collection(db, 'support_messages'), messageToCreate);
@@ -120,15 +155,114 @@ export const supportApi = {
       ...doc.data(),
     })) as SupportMessage[];
   },
+
+  async getAll(): Promise<SupportMessage[]> {
+    const q = query(collection(db, 'support_messages'), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...(docSnap.data() as Omit<SupportMessage, 'id'>),
+    }));
+  },
+
+  async updateStatus(
+    messageId: string,
+    status: 'open' | 'in-progress' | 'resolved',
+  ): Promise<void> {
+    const docRef = doc(db, 'support_messages', messageId);
+    await updateDoc(docRef, {
+      status,
+      updatedAt: Date.now(),
+    });
+  },
+
+  subscribeAll(
+    callback: (messages: SupportMessage[]) => void,
+    onError?: (error: Error) => void,
+  ) {
+    const q = query(collection(db, 'support_messages'), orderBy('createdAt', 'desc'));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...(docSnap.data() as Omit<SupportMessage, 'id'>),
+        }));
+        callback(data);
+      },
+      (error) => {
+        console.error('[supportApi.subscribeAll]', error);
+        onError?.(error);
+      },
+    );
+  },
 };
 
 export const contactApi = {
   async submit(formData: ContactForm): Promise<void> {
     await addDoc(collection(db, 'contact_submissions'), {
       ...formData,
+      createdAt: Date.now(),
       submittedAt: Date.now(),
       status: 'new',
     });
+  },
+
+  async getAll(): Promise<ContactSubmission[]> {
+    const q = query(collection(db, 'contact_submissions'), orderBy('submittedAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((docSnap) => {
+      const data = docSnap.data() as any;
+      return {
+        id: docSnap.id,
+        name: data.name,
+        email: data.email,
+        message: data.message,
+        status: data.status ?? 'new',
+        createdAt: data.createdAt ?? data.submittedAt ?? Date.now(),
+        respondedAt: data.respondedAt ?? undefined,
+      } as ContactSubmission;
+    });
+  },
+
+  async updateStatus(
+    submissionId: string,
+    status: 'new' | 'read' | 'responded',
+  ): Promise<void> {
+    const docRef = doc(db, 'contact_submissions', submissionId);
+    await updateDoc(docRef, {
+      status,
+      respondedAt: status === 'responded' ? Date.now() : deleteField(),
+    });
+  },
+
+  subscribeAll(
+    callback: (submissions: ContactSubmission[]) => void,
+    onError?: (error: Error) => void,
+  ) {
+    const q = query(collection(db, 'contact_submissions'), orderBy('submittedAt', 'desc'));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const submissions = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data() as any;
+          return {
+            id: docSnap.id,
+            name: data.name,
+            email: data.email,
+            message: data.message,
+            status: data.status ?? 'new',
+            createdAt: data.createdAt ?? data.submittedAt ?? Date.now(),
+            respondedAt: data.respondedAt ?? undefined,
+          } as ContactSubmission;
+        });
+        callback(submissions);
+      },
+      (error) => {
+        console.error('[contactApi.subscribeAll]', error);
+        onError?.(error);
+      },
+    );
   },
 };
 
@@ -159,5 +293,36 @@ export const testimonialsApi = {
       id: doc.id,
       ...doc.data(),
     }));
+  },
+};
+
+export const usersApi = {
+  async getAll(): Promise<UserProfile[]> {
+    const snapshot = await getDocs(collection(db, 'users'));
+    return snapshot.docs.map((docSnap) => ({
+      uid: docSnap.id,
+      ...(docSnap.data() as Omit<UserProfile, 'uid'>),
+    }));
+  },
+
+  subscribeAll(
+    callback: (users: UserProfile[]) => void,
+    onError?: (error: Error) => void,
+  ) {
+    const usersCollection = collection(db, 'users');
+    return onSnapshot(
+      usersCollection,
+      (snapshot) => {
+        const users = snapshot.docs.map((docSnap) => ({
+          uid: docSnap.id,
+          ...(docSnap.data() as Omit<UserProfile, 'uid'>),
+        }));
+        callback(users);
+      },
+      (error) => {
+        console.error('[usersApi.subscribeAll]', error);
+        onError?.(error);
+      },
+    );
   },
 };

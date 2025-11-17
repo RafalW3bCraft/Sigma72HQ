@@ -1,19 +1,14 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectsApi } from '@/lib/api';
-import { queryClient } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
-import { ChevronRight } from 'lucide-react';
 
 export function ProjectStatusPanel() {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
-  const { toast } = useToast();
   
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['/api/projects', currentUser?.uid],
@@ -23,42 +18,6 @@ export function ProjectStatusPanel() {
     },
     enabled: !!currentUser,
   });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ projectId, status }: { projectId: string; status: 'pending' | 'in-progress' | 'completed' | 'cancelled' }) => 
-      projectsApi.updateStatus(projectId, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', currentUser?.uid] });
-      toast({
-        title: t('status_updated'),
-        description: t('status_update_success'),
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: t('create_error'),
-        description: error.message || t('status_update_error'),
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const getNextStatus = (currentStatus: string): 'in-progress' | 'completed' | null => {
-    switch (currentStatus) {
-      case 'pending':
-        return 'in-progress';
-      case 'in-progress':
-        return 'completed';
-      default:
-        return null;
-    }
-  };
-
-  const getNextStatusLabel = (currentStatus: string): string => {
-    const next = getNextStatus(currentStatus);
-    if (!next) return '';
-    return next === 'in-progress' ? t('status_advance_start') : t('status_advance_complete');
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -128,22 +87,6 @@ export function ProjectStatusPanel() {
                         >
                           {t(`status_${project.status.replace('-', '_')}` as any)}
                         </Badge>
-                        {getNextStatus(project.status) && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateStatusMutation.mutate({
-                              projectId: project.id,
-                              status: getNextStatus(project.status)!,
-                            })}
-                            disabled={updateStatusMutation.isPending}
-                            className="gap-1"
-                            data-testid={`button-advance-status-${project.id}`}
-                          >
-                            {getNextStatusLabel(project.status)}
-                            <ChevronRight className="h-3 w-3" />
-                          </Button>
-                        )}
                       </div>
                     </div>
 

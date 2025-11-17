@@ -13,7 +13,7 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const { language, setLanguage, t } = useLanguage();
-  const { currentUser, signOut } = useAuth();
+  const { currentUser, userProfile, signOut } = useAuth();
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
@@ -146,6 +146,13 @@ export function Header() {
 
             {currentUser ? (
               <div className="flex items-center gap-3">
+                {userProfile?.role === 'admin' && (
+                  <Link href="/admin">
+                    <Button variant="secondary" className="hover-elevate active-elevate-2" data-testid="button-admin">
+                      {t('nav_admin')}
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/dashboard">
                   <Button variant="outline" className="hover-elevate active-elevate-2" data-testid="button-dashboard">
                     {t('nav_dashboard')}
@@ -227,6 +234,13 @@ export function Header() {
 
                 {currentUser ? (
                   <div className="flex flex-col gap-2 pt-4">
+                    {userProfile?.role === 'admin' && (
+                      <Link href="/admin">
+                        <Button className="w-full" variant="secondary" onClick={() => setMobileMenuOpen(false)} data-testid="button-mobile-admin">
+                          {t('nav_admin')}
+                        </Button>
+                      </Link>
+                    )}
                     <Link href="/dashboard">
                       <Button className="w-full" variant="outline" onClick={() => setMobileMenuOpen(false)} data-testid="button-mobile-dashboard">
                         {t('nav_dashboard')}

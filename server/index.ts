@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import net from "node:net";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -46,6 +47,36 @@ app.use((req, res, next) => {
   next();
 });
 
+async function checkPortAvailability(port: number): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const tester = net
+      .createServer()
+      .once("error", (error) => {
+        if ((error as NodeJS.ErrnoException).code === "EADDRINUSE") {
+          resolve(false);
+        } else {
+          reject(error);
+        }
+      })
+      .once("listening", () => {
+        tester.close(() => resolve(true));
+      })
+      .listen(port, "0.0.0.0");
+  });
+}
+
+async function findAvailablePort(preferredPort: number, attempts = 10): Promise<number> {
+  let port = preferredPort;
+  for (let i = 0; i < attempts; i++) {
+    const available = await checkPortAvailability(port);
+    if (available) {
+      return port;
+    }
+    port += 1;
+  }
+  throw new Error(`Unable to find an open port starting at ${preferredPort}`);
+}
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -63,7 +94,21 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const port = parseInt(process.env.PORT || '5000', 10);
+  const preferredPort = parseInt(process.env.PORT || '5000', 10);
+  let port: number;
+
+  try {
+    port = await findAvailablePort(preferredPort);
+  } catch (error) {
+    log(`unable to start dev server: ${(error as Error).message}`);
+    process.exit(1);
+    return;
+  }
+
+  if (port !== preferredPort) {
+    log(`port ${preferredPort} is busy, switched to ${port}`);
+  }
+
   server.listen({
     port,
     host: "0.0.0.0",
