@@ -121,6 +121,33 @@ export const projectsApi = {
       },
     );
   },
+
+  subscribeByUserId(
+    userId: string,
+    callback: (projects: Project[]) => void,
+    onError?: (error: Error) => void,
+  ) {
+    const q = query(
+      collection(db, 'projects'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc'),
+    );
+
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const next = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...(docSnap.data() as Omit<Project, 'id'>),
+        }));
+        callback(next);
+      },
+      (error) => {
+        console.error('[projectsApi.subscribeByUserId]', error);
+        onError?.(error);
+      },
+    );
+  },
 };
 
 export const supportApi = {

@@ -86,7 +86,7 @@ export const translations = {
     auth_switch_login: "Already have an account? Login",
     auth_switch_signup: "Don't have an account? Sign Up",
     auth_error: "Authentication failed. Please try again.",
-    auth_success: "Welcome to Sigma72HQ!",
+    auth_success: "Welcome to tEstServisIte!",
     
     dashboard_welcome: "Welcome",
     dashboard_create_project: "Create Project",
@@ -156,7 +156,7 @@ export const translations = {
     info_faq_title: "Frequently Asked Questions",
     
     footer_rights: "All rights reserved 2025",
-    footer_tagline: "SIGMA72HQ - Full-Cycle IT Solutions",
+    footer_tagline: "tEstServisIte - Full-Cycle IT Solutions",
     
     notfound_title: "404 Page Not Found",
     notfound_message: "Did you forget to add the page to the router?",
@@ -283,7 +283,7 @@ export const translations = {
     auth_switch_login: "Уже есть аккаунт? Войти",
     auth_switch_signup: "Нет аккаунта? Зарегистрироваться",
     auth_error: "Ошибка авторизации. Попробуйте снова.",
-    auth_success: "Добро пожаловать в Sigma72HQ!",
+    auth_success: "Добро пожаловать в tEstServisIte!",
     
     dashboard_welcome: "Добро пожаловать",
     dashboard_create_project: "Создать проект",
@@ -353,7 +353,7 @@ export const translations = {
     info_faq_title: "Часто задаваемые вопросы",
     
     footer_rights: "Все права защищены 2025",
-    footer_tagline: "SIGMA72HQ - Комплексные IT решения",
+    footer_tagline: "tEstServisIte - Комплексные IT решения",
     
     notfound_title: "404 Страница не найдена",
     notfound_message: "Возможно, вы забыли добавить страницу в маршрутизатор?",

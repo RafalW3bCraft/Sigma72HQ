@@ -80,9 +80,9 @@ export function Header() {
               whileHover={{ scale: 1.1 }}
               transition={{ duration: 0.3 }}
             >
-              <img src={logoImage} alt="Sigma72HQ Logo" className="w-full h-full object-contain" />
+              <img src={logoImage} alt="tEstServisIte Logo" className="w-full h-full object-contain" />
             </motion.div>
-            <span className="text-xl font-bold gradient-text">SIGMA72HQ</span>
+            <span className="text-xl font-bold gradient-text">tEstServisIte</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">

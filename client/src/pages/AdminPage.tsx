@@ -238,12 +238,22 @@ export default function AdminPage() {
   const newContactsCount = contacts.filter((contact) => contact.status === 'new').length;
   const openSupportCount = supportTickets.filter((ticket) => ticket.status !== 'resolved').length;
   const totalProjects = projects.length;
-  const completedProjects = projects.filter((project) => project.status === 'completed').length;
-  const formattedRevenue = new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: locale === 'ru-RU' ? 'RUB' : 'USD',
-    maximumFractionDigits: 0,
-  }).format(Math.max(completedProjects * 2500, 0));
+
+  const completedProjects = projects.filter((project) => project.status === 'completed');
+  const totalRevenue = completedProjects.reduce((sum, project) => {
+    if (!project.budget) return sum;
+    const numeric = parseFloat(project.budget.replace(/[^0-9.]/g, ''));
+    return sum + (isNaN(numeric) ? 0 : numeric);
+  }, 0);
+  const formattedRevenue = totalRevenue > 0
+    ? new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: locale === 'ru-RU' ? 'RUB' : 'USD',
+        maximumFractionDigits: 0,
+      }).format(totalRevenue)
+    : completedProjects.length > 0
+    ? `${completedProjects.length} ${completedProjects.length === 1 ? 'project' : 'projects'}`
+    : '—';
 
   const renderStatusBadge = (status: string) => {
     const map: Record<string, string> = {

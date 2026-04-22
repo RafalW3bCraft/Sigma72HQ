@@ -1,361 +1,471 @@
-# Sigma72HQ - Full-Cycle IT Solutions Platform
+# tEstServisIte — Full-Cycle IT Solutions Platform
 
-A modern business showcase and client management platform for IT solutions companies. Combines a marketing website with an authenticated client portal for project management and support.
+A modern, full-stack business showcase and client portal for an IT services company. The platform provides a public-facing marketing website and a private authenticated client dashboard, all backed by Firebase.
 
-## Features
+---
 
-### Public Marketing Website
-- Hero Section with animated cyber-themed effects
-- Services Showcase for IT solutions
-- Portfolio Gallery with project case studies
-- Business Plans and pricing presentation
-- Client Reviews and testimonials
-- Contact Form for lead generation
-- Full English and Russian language support
-- SEO optimized with meta tags and Open Graph
+## Table of Contents
 
-### Client Dashboard
-- Project Creation and submission
-- Project Status Tracking (Pending → In Progress → Completed)
-- Support Ticket system
-- Profile Management
+1. [Overview](#overview)
+2. [Tech Stack](#tech-stack)
+3. [Project Structure](#project-structure)
+4. [Environment Variables](#environment-variables)
+5. [Local Development](#local-development)
+6. [Architecture](#architecture)
+7. [Firebase Setup](#firebase-setup)
+8. [Authentication & Roles](#authentication--roles)
+9. [Features](#features)
+10. [API Reference](#api-reference)
+11. [Database Collections](#database-collections)
+12. [Internationalization](#internationalization)
+13. [Known Limitations & Future Work](#known-limitations--future-work)
+14. [Deployment](#deployment)
+15. [Admin Setup](#admin-setup)
 
-### Admin Dashboard
-- Contact Management and lead tracking
-- Support Ticket oversight
-- Project Overview across all clients
-- Analytics Dashboard
+---
 
-### Design Features
-- Modern cyber-themed dark aesthetic with neon red and cyan accents
-- Responsive design for mobile, tablet, and desktop
-- Smooth Framer Motion animations
-- Glassmorphism effects with backdrop blur
-- Optimized particle animations
+## Overview
+
+**tEstServisIte** is a full-cycle IT solutions platform serving two audiences:
+
+- **Public visitors** — browse services, portfolio, business plan, client reviews, and submit a contact request.
+- **Registered clients** — log in to a private dashboard where they can submit project requests, track project statuses in real-time, and raise support tickets.
+- **Administrators** — log in to an admin dashboard to manage all contact submissions, support tickets, and client projects.
+
+The application uses a cyber-themed dark aesthetic with neon red/cyan accents and glassmorphism-style UI components.
+
+---
 
 ## Tech Stack
 
-### Frontend
-- React 18 with TypeScript
-- Vite for fast development and builds
-- Wouter for client-side routing
-- TanStack Query for server state management
-- Shadcn/ui component library
-- Tailwind CSS for styling
-- Framer Motion for animations
-- Lucide React for icons
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Vite |
+| Routing | Wouter |
+| State / Data | TanStack Query v5 + Firestore `onSnapshot` for real-time subscriptions |
+| UI Components | shadcn/ui (Radix UI primitives) |
+| Styling | Tailwind CSS v3, tailwindcss-animate, Framer Motion |
+| Icons | Lucide React, React Icons |
+| Forms | React Hook Form + Zod |
+| Backend | Express.js (Node.js) — serves the frontend in development and production |
+| Database | Cloud Firestore (Firebase) |
+| Authentication | Firebase Authentication (Email / Password) |
+| Validation | Zod (shared schemas between frontend and backend) |
+| i18n | Custom `translations.ts` (English + Russian) |
+| Build | Vite (frontend), esbuild (server bundle) |
+| Package Manager | npm |
 
-### Backend
-- Firebase Authentication
-- Cloud Firestore database
-- Express.js server
-- Firestore Security Rules for access control
-
-### Development Tools
-- TypeScript for type checking
-- ESBuild for server bundling
-- PostCSS with Autoprefixer
-- Drizzle Zod for schema validation
-
-## Prerequisites
-
-- Node.js 20+ installed
-- npm package manager
-- Firebase project (create at https://console.firebase.google.com/)
-- Git for version control
-
-## Setup Instructions
-
-### 1. Clone and Install
-
-```bash
-npm install
-```
-
-### 2. Firebase Configuration
-
-#### Create a Firebase Project
-1. Go to Firebase Console (https://console.firebase.google.com/)
-2. Click "Add project" and follow setup wizard
-3. Enable Authentication → Email/Password provider
-4. Create Firestore Database in production mode
-5. Register a web app to get configuration
-
-#### Configure Firestore Security Rules
-1. Navigate to Firestore Database → Rules
-2. Copy contents from `FIRESTORE_SECURITY_RULES.md`
-3. Paste into Firebase Console rules editor
-4. Click Publish
-
-### 3. Environment Variables
-
-Set the following environment variables:
-
-```env
-VITE_FIREBASE_API_KEY=your_api_key_here
-VITE_FIREBASE_PROJECT_ID=your_project_id_here
-VITE_FIREBASE_APP_ID=your_app_id_here
-```
-
-Find these values in: Firebase Console → Project Settings → General → Your apps → Web app
-
-### 4. Running the Application
-
-```bash
-npm run dev
-```
-
-Application available at `http://localhost:5000`
-
-- Frontend served by Vite with hot module replacement
-- Backend Express server handles API routes
-- Both run on port 5000
-
-## Admin User Setup
-
-Users cannot self-register as admin for security. Admin role must be assigned manually through Firebase Console.
-
-### Creating the First Admin User
-
-1. Register a Regular User through the signup form
-2. Open Firebase Console → Firestore Database
-3. Navigate to `users` collection
-4. Find the User Document by email or UID
-5. Edit Document and change `role: "user"` to `role: "admin"`
-6. Log Out and Log Back In
-7. Access Admin Dashboard at `/admin` route
-
-### Admin Capabilities
-
-Admin users can:
-- View all contact form submissions
-- View all support tickets from all users
-- View all projects from all users
-- Manage portfolio items
-- Manage testimonials
-- Update support ticket statuses
-- Delete projects or support tickets
+---
 
 ## Project Structure
 
 ```
-sigma72hq/
-├── client/                    
-│   ├── public/               
+tEstServisIte/
+├── client/                          # React frontend (Vite root)
+│   ├── index.html
+│   ├── public/                      # Static assets (logos, images)
 │   └── src/
-│       ├── components/       
-│       ├── contexts/        
-│       ├── hooks/           
-│       ├── lib/             
-│       ├── pages/           
-│       ├── App.tsx          
-│       ├── index.css        
-│       └── main.tsx         
-├── server/                   
-│   ├── index.ts            
-│   ├── routes.ts           
-│   └── vite.ts             
-├── shared/                  
-│   └── schema.ts           
-├── FIRESTORE_SECURITY_RULES.md
-├── ADMIN_SETUP.md
-├── design_guidelines.md
-├── HEROKU.md
+│       ├── components/
+│       │   ├── dashboard/           # Dashboard sub-panels
+│       │   │   ├── CreateProjectPanel.tsx
+│       │   │   ├── ProjectStatusPanel.tsx  # Real-time via onSnapshot
+│       │   │   ├── SupportPanel.tsx
+│       │   │   └── InfoPanel.tsx
+│       │   ├── sections/            # Landing page sections
+│       │   │   ├── HeroSection.tsx
+│       │   │   ├── ServicesSection.tsx
+│       │   │   ├── PortfolioSection.tsx
+│       │   │   ├── PlanSection.tsx
+│       │   │   ├── ReviewsSection.tsx
+│       │   │   └── ContactSection.tsx
+│       │   ├── ui/                  # shadcn/ui primitives
+│       │   ├── Header.tsx
+│       │   └── Footer.tsx
+│       ├── contexts/
+│       │   ├── AuthContext.tsx      # Firebase Auth state + Firestore profile
+│       │   ├── LanguageContext.tsx
+│       │   └── ThemeContext.tsx
+│       ├── hooks/
+│       │   └── use-toast.ts
+│       ├── lib/
+│       │   ├── api.ts               # All Firestore CRUD + real-time subscriptions
+│       │   ├── firebase.ts          # Firebase app initialization
+│       │   └── translations.ts      # EN + RU string map
+│       └── pages/
+│           ├── HomePage.tsx
+│           ├── AuthPage.tsx
+│           ├── DashboardPage.tsx
+│           ├── AdminPage.tsx
+│           └── not-found.tsx
+├── server/
+│   ├── index.ts                     # Express entry point, auto port-finding
+│   ├── routes.ts                    # /api/health endpoint
+│   └── vite.ts                      # Vite dev middleware integration
+├── shared/
+│   └── schema.ts                    # Zod schemas + TypeScript types (shared)
+├── .env                             # Environment variables (do not commit)
 ├── package.json
-└── README.md
+├── vite.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+├── drizzle.config.ts                # Present but unused; Firebase used instead
+├── ADMIN_SETUP.md                   # Admin role elevation instructions
+├── FIRESTORE_SECURITY_RULES.md      # Security rules for Firebase Console
+└── design_guidelines.md             # UI/UX design specification
 ```
 
-## Key Functionality
+---
 
-### Authentication Flow
-1. User registers with email, password, company name, and phone number
-2. Firebase Authentication creates user account
-3. User profile stored in Firestore with role "user"
-4. JWT tokens managed automatically by Firebase SDK
-5. Auth state persists across tabs and sessions
+## Environment Variables
 
-### Project Management
-1. Authenticated users create projects via dashboard
-2. Projects stored in Firestore with status "pending"
-3. Status pipeline: pending → in-progress → completed
-4. Only project owner can view/modify their projects
-5. Firestore rules enforce status transition validation
+All required variables live in `.env` at the project root.
 
-### Support System
-1. Users submit support tickets via dashboard
-2. Tickets stored in Firestore with status "open"
-3. Only ticket owner can view their tickets
-4. Admin can view all tickets
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_FIREBASE_API_KEY` | Yes | Firebase Web API key |
+| `VITE_FIREBASE_PROJECT_ID` | Yes | Firebase project ID |
+| `VITE_FIREBASE_APP_ID` | Yes | Firebase App ID |
+| `SESSION_SECRET` | Yes | Secret for Express session middleware |
+| `ADMIN_EMAIL` | Optional | Reference only — initial admin email |
+| `ADMIN_PASSWORD` | Optional | Reference only — initial admin password |
+| `PORT` | Optional | Server listen port (default: `5000`) |
 
-### Contact Form
-1. Public endpoint, no authentication required
-2. Submissions stored in Firestore
-3. Admin-only read access via Firestore rules
+> Variables prefixed with `VITE_` are embedded into the browser bundle at build time. Do not store private secrets here.
 
-## Database Schema
+---
 
-### Users Collection
-```typescript
-{
-  uid: string;
-  email: string;
-  companyName: string;
-  phoneNumber: string;
-  role: "user" | "admin";
-  createdAt: number;
-}
+## Local Development
+
+### Prerequisites
+
+- Node.js 20+
+- npm
+
+### Steps
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Ensure .env is configured with your Firebase credentials
+
+# 3. Start the development server (Express + Vite HMR)
+npm run dev
 ```
 
-### Projects Collection
-```typescript
-{
-  id: string;
-  userId: string;
-  serviceType: string;
-  projectName: string;
-  description: string;
-  timeline?: string;
-  budget?: string;
-  status: "pending" | "in-progress" | "completed" | "cancelled";
-  createdAt: number;
-  updatedAt: number;
-}
-```
-
-### Support Messages Collection
-```typescript
-{
-  id: string;
-  userId: string;
-  projectId?: string;
-  subject: string;
-  message: string;
-  status: "open" | "in-progress" | "resolved";
-  createdAt: number;
-}
-```
-
-### Contact Submissions Collection
-```typescript
-{
-  id: string;
-  name: string;
-  email: string;
-  message: string;
-  status: "new" | "read" | "responded";
-  createdAt: number;
-  respondedAt?: number;
-}
-```
-
-## Security Considerations
-
-### Authentication
-- Password minimum length: 6 characters
-- Passwords hashed by Firebase Authentication
-- JWT tokens automatically managed
-- Session persistence configurable
-
-### Authorization
-- Firestore Security Rules enforce row-level security
-- Users can only access their own data
-- Admin role checked server-side via Firestore rules
-- No sensitive data in client-side code
-
-### Data Validation
-- Client-side validation with Zod schemas
-- Server-side validation via Firestore rules
-- XSS protection through React default escaping
-- CSRF protection through Firebase token validation
-
-## Development
+The app will be available at `http://localhost:5000`.
 
 ### Available Scripts
 
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm start            # Start production server
+| Script | Description |
+|---|---|
+| `npm run dev` | Start development server with hot-reload |
+| `npm run build` | Build frontend (Vite) + bundle server (esbuild) into `dist/` |
+| `npm start` | Run the production build |
+| `npm run check` | TypeScript type check |
+
+---
+
+## Architecture
+
+### Development Request Flow
+
+```
+Browser
+  └─► Express (port 5000)
+        ├─► /api/*  → Express route handlers (server/routes.ts)
+        └─► *       → Vite middleware → React SPA (HMR enabled)
 ```
 
-### Adding a New Page
+### Production Request Flow
 
-1. Create component in `client/src/pages/`
-2. Add route in `client/src/App.tsx`
-3. Update navigation in `client/src/components/Header.tsx`
-4. Add translations in `client/src/lib/translations.ts`
+```
+Browser
+  └─► Express (port 5000)
+        ├─► /api/*   → Express route handlers
+        └─► *        → dist/public/ (static files + SPA fallback)
+```
 
-### Modifying Firestore Schema
+### Data Flow
 
-1. Update types in `shared/schema.ts`
-2. Update API functions in `client/src/lib/api.ts`
-3. Update Firestore Security Rules in Firebase Console
-4. Test with authenticated and unauthenticated users
+All data operations go **directly from the browser to Firebase**. The Express server does not proxy Firebase calls; it only:
 
-### Adding Translations
+1. Serves the built frontend in production.
+2. Runs Vite dev middleware in development.
+3. Exposes the `/api/health` endpoint.
 
-Edit `client/src/lib/translations.ts`:
+Real-time data (projects, contacts, support tickets, users) uses Firestore `onSnapshot` listeners, which push updates to the React state automatically — no polling required.
 
-```typescript
-export const translations = {
-  en: {
-    new_key: "English text",
-  },
-  ru: {
-    new_key: "Русский текст",
-  }
+---
+
+## Firebase Setup
+
+### Step 1 — Create a Firebase Project
+
+1. Go to [Firebase Console](https://console.firebase.google.com/).
+2. Create a new project.
+3. Enable **Authentication** → **Email/Password** sign-in method.
+4. Enable **Cloud Firestore** in production mode.
+
+### Step 2 — Get Config Keys
+
+1. Firebase Console → Project Settings → Your apps → Web app.
+2. Copy `apiKey`, `projectId`, and `appId` into your `.env` file.
+
+### Step 3 — Deploy Security Rules
+
+The file `FIRESTORE_SECURITY_RULES.md` contains the full ruleset. Copy the rules and publish them via:
+
+> Firebase Console → Firestore Database → Rules → Edit → Publish
+
+Rules enforce:
+- Users can only read/write their own documents.
+- Admins can read all documents.
+- Contact submissions are write-only from the public.
+
+### Step 4 — Create Composite Indexes
+
+If you see a "missing index" error in the browser console, click the provided link to auto-create it. Common required indexes:
+
+- `projects`: `userId ASC, createdAt DESC`
+- `support_messages`: `userId ASC, createdAt DESC`
+- `contact_submissions`: `submittedAt DESC`
+
+---
+
+## Authentication & Roles
+
+Authentication is handled entirely by **Firebase Authentication**. On sign-up, a profile document is created in the `users` Firestore collection with `role: "user"`.
+
+### Roles
+
+| Role | Access |
+|---|---|
+| `user` | Public site + client dashboard (own data only) |
+| `admin` | Public site + admin dashboard (all users, projects, contacts, tickets) |
+
+### Promoting a User to Admin
+
+There is no UI for this — it must be done manually:
+
+1. Firebase Console → Firestore → `users` collection.
+2. Open the document whose ID matches the user's Firebase Auth UID.
+3. Set the `role` field to `"admin"`.
+4. The user gains admin access on their next page load.
+
+See `ADMIN_SETUP.md` for detailed instructions.
+
+---
+
+## Features
+
+### Public Website
+
+| Section | Description |
+|---|---|
+| Hero | Animated headline with CTA buttons |
+| Services | Cards: Website Dev, Telegram Bots, AI Assistants, Mobile Apps |
+| Portfolio | Filterable gallery from the `portfolio` Firestore collection |
+| Business Plan | Full MVP roadmap and strategic priorities |
+| Reviews | Client testimonials from the `testimonials` Firestore collection |
+| Contact | Form that writes to `contact_submissions` in Firestore |
+
+### Client Dashboard (Authenticated Users)
+
+| Tab | Description |
+|---|---|
+| Create Project | Submit a new project request form |
+| Project Status | Real-time list of own projects with status progress bar |
+| Support | Submit a support ticket |
+| Information | Platform FAQ and how-it-works guide |
+
+### Admin Dashboard (Admin Role Only)
+
+| Tab | Description |
+|---|---|
+| Contact Submissions | All contact form entries; advance status: New → Read → Responded |
+| Support Tickets | All support messages; advance status: Open → In-Progress → Resolved |
+| Projects | All client projects with inline status dropdown and full client info |
+
+**Summary Cards** show at a glance:
+- New (unread) contact submissions count
+- Open + in-progress support ticket count
+- Total project count
+- Revenue — summed from the `budget` field of completed projects (falls back to completed project count when no numeric budgets are present)
+
+---
+
+## API Reference
+
+The Express backend exposes one REST endpoint. All other data access uses Firebase SDK directly from the browser.
+
+### `GET /api/health`
+
+Returns service health status.
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "service": "testservisite"
 }
 ```
 
-Use in components:
-```typescript
-const { t } = useLanguage();
-<p>{t('new_key')}</p>
-```
+---
+
+## Database Collections
+
+### `users`
+
+Document ID = Firebase Auth UID.
+
+| Field | Type | Description |
+|---|---|---|
+| `uid` | string | Firebase Auth UID |
+| `email` | string | User email |
+| `companyName` | string | Company or individual name |
+| `phoneNumber` | string | Contact phone number |
+| `role` | `"user"` \| `"admin"` | Access role (default: `"user"`) |
+| `createdAt` | number | Unix timestamp in ms |
+
+### `projects`
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Firestore document ID |
+| `userId` | string | Owner UID |
+| `serviceType` | enum | `website`, `telegram-bot`, `ai-assistant`, `mobile-app`, `e-commerce`, `other` |
+| `projectName` | string | Project name |
+| `description` | string | Min 10 chars |
+| `timeline` | string? | Optional, e.g. "2-3 months" |
+| `budget` | string? | Optional, e.g. "$5000-$10000" |
+| `status` | enum | `pending`, `in-progress`, `completed`, `cancelled` |
+| `createdAt` | number | Unix timestamp in ms |
+| `updatedAt` | number | Unix timestamp in ms |
+
+### `support_messages`
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Firestore document ID |
+| `userId` | string | Submitting user UID |
+| `projectId` | string? | Optional related project ID |
+| `subject` | string | Ticket subject |
+| `message` | string | Ticket body |
+| `status` | enum | `open`, `in-progress`, `resolved` |
+| `createdAt` | number | Unix timestamp in ms |
+| `updatedAt` | number? | Unix timestamp in ms |
+
+### `contact_submissions`
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Firestore document ID |
+| `name` | string | Sender name |
+| `email` | string | Sender email |
+| `message` | string | Message body |
+| `status` | enum | `new`, `read`, `responded` |
+| `createdAt` | number | Unix timestamp in ms |
+| `respondedAt` | number? | Unix timestamp in ms |
+
+### `portfolio`
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Firestore document ID |
+| `title` | string | Project title |
+| `description` | string | Short description |
+| `category` | enum | `website`, `telegram-bot`, `ai-assistant`, `mobile-app`, `e-commerce` |
+| `imageUrl` | string? | Thumbnail URL |
+| `tags` | string[] | Tag list |
+| `technologies` | string[] | Tech stack used |
+| `client` | string? | Client name |
+| `duration` | string? | Project duration |
+| `challenge` | string? | Problem statement |
+| `solution` | string? | Approach taken |
+| `outcome` | string? | Results achieved |
+| `metrics` | `{label, value}[]`? | KPI metrics |
+| `featured` | boolean | Feature flag |
+| `liveUrl` | string? | Live project URL |
+| `githubUrl` | string? | GitHub repository URL |
+| `order` | number | Sort order (ascending) |
+| `createdAt` | number? | Unix timestamp in ms |
+| `updatedAt` | number? | Unix timestamp in ms |
+
+### `testimonials`
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Firestore document ID |
+| `clientName` | string | Reviewer name |
+| `companyName` | string | Reviewer's company |
+| `rating` | number | 1–5 star rating |
+| `text` | string | Review text |
+| `avatarUrl` | string? | Avatar image URL |
+| `order` | number | Sort order (ascending) |
+
+---
+
+## Internationalization
+
+The app supports **English** and **Russian** via a custom translation system.
+
+- All UI strings are in `client/src/lib/translations.ts`.
+- Language state is managed by `LanguageContext` and persisted to `localStorage`.
+- The `useLanguage()` hook exposes a `t(key)` function for string lookup.
+- Language can be switched using the EN / RU toggle in the header.
+
+To add a new language:
+1. Add a new key to the `translations` object in `translations.ts`.
+2. Extend the `Language` type accordingly.
+
+---
+
+## Known Limitations & Future Work
+
+| Area | Issue | Suggested Fix |
+|---|---|---|
+| Revenue Calculation | Sums numeric portion of budget strings; text-range budgets like `"$5k-$10k"` are partially parsed | Add a dedicated numeric `budgetValue` field on the project |
+| Admin Portfolio Tab | Translation keys exist but no UI to add/edit/delete portfolio items | Implement CRUD forms using `portfolioApi` |
+| Admin Testimonials Tab | No admin interface for testimonials | Add CRUD forms using `testimonialsApi` |
+| Support Replies | Admins can change ticket status but cannot write reply messages | Add `replies` sub-collection or `adminReply` field |
+| Contact Response | "Responded" action updates a flag but does not send an email | Integrate Firebase Extension (Trigger Email) or transactional email API |
+| Firestore Rules | Rules in `FIRESTORE_SECURITY_RULES.md` must be manually deployed | Automate with Firebase CLI: `firebase deploy --only firestore:rules` |
+| Admin Role Creation | Requires manual Firestore Console edit | Add a one-time setup Cloud Function or CLI script |
+
+---
 
 ## Deployment
 
-### Heroku Deployment
+### Production Build
 
-See detailed instructions in `HEROKU.md`
+```bash
+npm run build
+# Produces:
+#   dist/public/  — React bundle (static assets)
+#   dist/index.js — bundled Express server
+
+npm start
+```
 
 ### Replit Deployment
-1. Set environment variables in Replit Secrets
-2. Click "Publish" button in Replit
-3. Application available at `*.replit.app`
 
-### Other Platforms
-1. Build the application: `npm run build`
-2. Set environment variables in platform settings
-3. Deploy the `dist` directory
-4. Ensure Firebase Security Rules are configured
+Pre-configured for autoscale deployment:
 
-## Troubleshooting
+- **Build command:** `npm run build`
+- **Run command:** `node dist/index.js`
 
-### Firebase Connection Issues
-- Verify environment variables are set correctly
-- Check Firebase Console → Authentication is enabled
-- Ensure Firestore database is created
-- Verify Security Rules are published
+Click **Deploy** in the Replit UI to publish. TLS, health checks, and CDN are handled automatically.
 
-### Admin Access Not Working
-- Confirm user role is set to "admin" in Firestore
-- Log out and log back in after role change
-- Clear browser cache and cookies
-- Check browser console for errors
+---
 
-### Build Errors
-- Delete `node_modules` and reinstall
-- Clear Vite cache: `rm -rf node_modules/.vite`
-- Verify Node.js version is 20+
+## Admin Setup
 
-## License
+See `ADMIN_SETUP.md` for step-by-step instructions covering:
 
-Proprietary - Sigma72HQ Platform
+1. Registering the initial admin user via the Sign Up page.
+2. Elevating the user's `role` field to `"admin"` in Firestore Console.
+3. Verifying admin access in the app.
 
-## Support
-
-For issues or questions:
-- Check Firebase Console for database/auth errors
-- Review Firestore Security Rules
-- Contact support through platform contact form
+The `ADMIN_EMAIL` and `ADMIN_PASSWORD` values in `.env` are documentation references only — they do not automatically create an account or grant admin rights.

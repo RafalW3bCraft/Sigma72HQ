@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectsApi } from '@/lib/api';
+import type { Project } from '@shared/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,15 +10,32 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function ProjectStatusPanel() {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
-  
-  const { data: projects = [], isLoading } = useQuery({
-    queryKey: ['/api/projects', currentUser?.uid],
-    queryFn: async () => {
-      if (!currentUser) return [];
-      return projectsApi.getByUserId(currentUser.uid);
-    },
-    enabled: !!currentUser,
-  });
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setProjects([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const unsubscribe = projectsApi.subscribeByUserId(
+      currentUser.uid,
+      (next) => {
+        setProjects(next);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('[ProjectStatusPanel]', error);
+        setIsLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
