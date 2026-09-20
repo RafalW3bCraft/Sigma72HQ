@@ -1,4 +1,4 @@
-# tEstServisIte — Full-Cycle IT Solutions Platform
+# Full-Cycle IT Solutions Platform
 
 A modern, full-stack business showcase and client portal for an IT services company. The platform provides a public-facing marketing website and a private authenticated client dashboard, all backed by Firebase.
 
